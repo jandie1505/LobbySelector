@@ -2,6 +2,7 @@ package net.jandie1505.lobbyselector;
 
 import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.driver.provider.CloudServiceProvider;
+import eu.cloudnetservice.driver.registry.ServiceRegistry;
 import eu.cloudnetservice.driver.service.ServiceInfoSnapshot;
 import eu.cloudnetservice.modules.bridge.BridgeDocProperties;
 import eu.cloudnetservice.modules.bridge.player.CloudPlayer;
@@ -17,7 +18,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -50,11 +50,6 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
     }
 
     @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-
-    }
-
-    @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
 
         if (event.getInventory() == null || event.getInventory().getHolder() != this) {
@@ -64,22 +59,18 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
         event.setCancelled(true);
 
         if (event.getCurrentItem() == null) {
-            System.out.println("item null");
             return;
         }
 
         if (event.getCurrentItem().getItemMeta() == null) {
-            System.out.println("meta null");
             return;
         }
 
         if (event.getCurrentItem().getItemMeta().getLore() == null) {
-            System.out.println("lore null");
             return;
         }
 
         if (event.getCurrentItem().getItemMeta().getLore().isEmpty()) {
-            System.out.println("lore empty");
             return;
         }
 
@@ -87,45 +78,44 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
         WrapperConfiguration wrapperConfiguration = InjectionLayer.ext().instance(WrapperConfiguration.class);
 
         if (cloudServiceProvider == null || wrapperConfiguration == null) {
-            System.out.println("serviceprovider or wrapperconfig null");
             return;
         }
 
         ServiceInfoSnapshot service = cloudServiceProvider.serviceByName(event.getCurrentItem().getItemMeta().getLore().get(0));
 
         if (service == null) {
-            System.out.println("server null");
             return;
         }
 
         if (this.configManager.getConfig().optString("lobbyTask") == null || !service.serviceId().taskName().equals(this.configManager.getConfig().optString("lobbyTask"))) {
-            System.out.println("invalid lobby task");
             return;
         }
 
         if (wrapperConfiguration.serviceInfoSnapshot().name().equals(service.name())) {
-            System.out.println("service is current service");
             return;
         }
 
-        PlayerManager playerManager = InjectionLayer.ext().instance(PlayerManager.class);
+        ServiceRegistry serviceRegistry = InjectionLayer.ext().instance(ServiceRegistry.class);
+
+        if (serviceRegistry == null) {
+            return;
+        }
+
+        PlayerManager playerManager = serviceRegistry.firstProvider(PlayerManager.class);
 
         if (playerManager == null) {
-            System.out.println("playermanager null");
             return;
         }
 
         CloudPlayer player = playerManager.onlinePlayer(event.getWhoClicked().getUniqueId());
 
         if (player == null) {
-            System.out.println("player null");
             return;
         }
 
         PlayerExecutor playerExecutor = playerManager.playerExecutor(player.uniqueId());
 
         if (playerExecutor == null) {
-            System.out.println("executor null");
             return;
         }
 
@@ -161,6 +151,11 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
         ((Player) sender).openInventory(this.getLobbySelector());
 
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
+        return List.of();
     }
 
     @Override
@@ -272,14 +267,6 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
         config.put("lobbyTask", "Lobby");
         config.put("inventoryTitle", "&lLobby Selector:");
         config.put("hideFullServices", false);
-
-        JSONObject hotbarItemConfig = new JSONObject();
-
-        hotbarItemConfig.put("type", Material.NETHER_STAR.name());
-        hotbarItemConfig.put("amount", 1);
-        hotbarItemConfig.put("name", "&3&lLobby Selector &8× &7rightclick");
-
-        config.put("hotbarItem", hotbarItemConfig);
 
         JSONObject serverItemConfig = new JSONObject();
 
