@@ -1,0 +1,15 @@
+main: net.jandie1505.lobbyselector.LobbySelector
+name: LobbySelector
+version: 1.0
+api-version: 1.13
+permissions:
+  lobbyselector.use:
+    description: Allow usage of the lobby selector
+  lobbyselector.giveitem:
+    description: Give lobby selector item to player
+commands:
+  lobbyselector:
+    description: Open the lobby selector
+    usage: /lobbyselector
+website: github.com/jandie1505
+depend: [CloudNet-Bridge]
