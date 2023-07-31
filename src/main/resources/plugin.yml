@@ -5,11 +5,12 @@ api-version: 1.13
 permissions:
   lobbyselector.use:
     description: Allow usage of the lobby selector
-  lobbyselector.giveitem:
-    description: Give lobby selector item to player
+  lobbyselector.silentlobby:
+    description: Allow silent lobby
 commands:
   lobbyselector:
     description: Open the lobby selector
     usage: /lobbyselector
+    permission: lobbyselector.use
 website: github.com/jandie1505
 depend: [CloudNet-Bridge]

@@ -56,6 +56,10 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             return;
         }
 
+        if (!(event.getWhoClicked() instanceof Player)) {
+            return;
+        }
+
         event.setCancelled(true);
 
         if (event.getCurrentItem() == null) {
@@ -87,7 +91,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             return;
         }
 
-        if (this.configManager.getConfig().optString("lobbyTask") == null || !service.serviceId().taskName().equals(this.configManager.getConfig().optString("lobbyTask"))) {
+        if (!this.isValidLobbyService(service, event.getWhoClicked().hasPermission("lobbyselector.silenthub"))) {
             return;
         }
 
@@ -127,7 +131,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
 
-        if (event.getInventory() == null || event.getInventory().getHolder() == this) {
+        if (event.getInventory() == null || event.getInventory().getHolder() != this) {
             return;
         }
 
@@ -148,7 +152,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             return true;
         }
 
-        ((Player) sender).openInventory(this.getLobbySelector());
+        ((Player) sender).openInventory(this.getLobbySelector(sender.hasPermission("lobbyselector.silentlobby")));
 
         return true;
     }
@@ -163,7 +167,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
         return this.getServer().createInventory(this, 9, "§c§mLobby Selector");
     }
 
-    public Inventory getLobbySelector() {
+    public Inventory getLobbySelector(boolean allowSilentLobby) {
         CloudServiceProvider cloudServiceProvider = InjectionLayer.ext().instance(CloudServiceProvider.class);
         WrapperConfiguration wrapperConfiguration = InjectionLayer.ext().instance(WrapperConfiguration.class);
 
@@ -171,7 +175,13 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             return this.getInventory();
         }
 
-        List<ServiceInfoSnapshot> services = new ArrayList<>(cloudServiceProvider.servicesByTask(this.configManager.getConfig().optString("lobbyTask", "Lobby")));
+        List<ServiceInfoSnapshot> services = new ArrayList<>();
+
+        if (allowSilentLobby && this.configManager.getConfig().optBoolean("enableSilentLobby", false)) {
+            services.addAll(cloudServiceProvider.servicesByTask(this.configManager.getConfig().optString("silentLobbyTask", "SilentLobby")));
+        }
+
+        services.addAll(cloudServiceProvider.servicesByTask(this.configManager.getConfig().optString("lobbyTask", "Lobby")));
 
         Collections.reverse(services);
 
@@ -261,12 +271,31 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
         return string;
     }
 
+    private boolean isValidLobbyService(ServiceInfoSnapshot service, boolean enableSilentHub) {
+
+        if (this.configManager.getConfig().optString("lobbyTask") != null && service.serviceId().taskName().equals(this.configManager.getConfig().optString("lobbyTask"))) {
+            return true;
+        }
+
+        if (enableSilentHub && this.isSilentHubService(service)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean isSilentHubService(ServiceInfoSnapshot service) {
+        return this.configManager.getConfig().optBoolean("enableSilentLobby", false) && this.configManager.getConfig().optString("silentLobbyTask") != null && service.serviceId().taskName().equals(this.configManager.getConfig().optString("silentLobbyTask"));
+    }
+
     private JSONObject getDefaultConfigValues() {
         JSONObject config = new JSONObject();
 
         config.put("lobbyTask", "Lobby");
         config.put("inventoryTitle", "&lLobby Selector:");
         config.put("hideFullServices", false);
+        config.put("enableSilentLobby", false);
+        config.put("silentLobbyTask", "SilentLobby");
 
         JSONObject serverItemConfig = new JSONObject();
 
