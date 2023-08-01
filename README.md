@@ -1,6 +1,11 @@
 # LobbySelector
 Displays CloudNet lobby services inside an inventory menu. Also supports silent lobbies.
 
+## Requirements
+- CloudNet v4 (v3 is not supported, tested with v4.0.0-RC9)
+- A lobby task
+- A lobby plugin which supports custom items that run commands when they are clicked (only if you want to open the lobby selector with an item)
+
 ## Installation
 1. Download the plugin from the releases page
 2. Put the plugin jar into the plugins folder of your lobby template
