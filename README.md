@@ -1,5 +1,5 @@
 # LobbySelector
-LobbySelector for CloudNet v4
+Displays CloudNet lobby services inside an inventory menu. Also supports silent lobbies.
 
 ## Installation
 1. Download the plugin from the releases page
@@ -15,7 +15,7 @@ With the command `/lobbyselector`, the lobby selector menu can be opened.  There
 | Permission | Description |
 |--|--|
 | `lobbyselector.use` | Allows the usage of the command `/lobbyselector`. |
-| `lobbyselector.silentlobby` | Allows to see silent lobbys in the lobby selector menu. |
+| `lobbyselector.silentlobby` | Allows to see silent lobbies in the lobby selector menu. |
 
 ## Configuration
 | Value | Description |
