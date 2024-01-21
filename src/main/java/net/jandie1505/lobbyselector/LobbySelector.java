@@ -12,6 +12,7 @@ import eu.cloudnetservice.wrapper.configuration.WrapperConfiguration;
 import net.jandie1505.configmanager.ConfigManager;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,6 +23,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
@@ -70,11 +72,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             return;
         }
 
-        if (event.getCurrentItem().getItemMeta().getLore() == null) {
-            return;
-        }
-
-        if (event.getCurrentItem().getItemMeta().getLore().isEmpty()) {
+        if (!event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(this, "service"))) {
             return;
         }
 
@@ -85,7 +83,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             return;
         }
 
-        ServiceInfoSnapshot service = cloudServiceProvider.serviceByName(event.getCurrentItem().getItemMeta().getLore().get(0));
+        ServiceInfoSnapshot service = cloudServiceProvider.serviceByName(event.getCurrentItem().getItemMeta().getPersistentDataContainer().getOrDefault(new NamespacedKey(this, "service"), PersistentDataType.STRING, ""));
 
         if (service == null) {
             return;
@@ -236,11 +234,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             }
 
             ItemMeta meta = item.getItemMeta();
-
-            List<String> lore = new ArrayList<>();
-            lore.add(service.name());
-            meta.setLore(lore);
-
+            meta.getPersistentDataContainer().set(new NamespacedKey(this, "service"), PersistentDataType.STRING, service.name());
             item.setItemMeta(meta);
 
             inventory.setItem(slot, item);
