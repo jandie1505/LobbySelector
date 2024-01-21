@@ -14,6 +14,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.*;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,11 +22,13 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -207,6 +210,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             }
 
             boolean currentService = wrapperConfiguration.serviceInfoSnapshot().name().equals(service.name());
+            boolean isSilentHubService = this.isSilentHubService(service);
 
             String name = service.name();
             int players = service.readProperty(BridgeDocProperties.PLAYERS).size();
@@ -216,17 +220,16 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
                 continue;
             }
 
-            ItemStack item = new ItemStack(Material.AIR);
+            ItemStack item;
 
             if (currentService) {
-                item.setType(Objects.requireNonNullElse(Material.getMaterial(this.configManager.getConfig().optJSONObject("serverItem", new JSONObject()).optString("typeCurrent", "")), Material.EMERALD));
-                this.setTitle(item, this.handlePlaceholders(this.configManager.getConfig().optJSONObject("serverItem", new JSONObject()).optString("nameCurrent", "&7{service} ({players}/{max_players})"), name, players, maxPlayers));
+                item = this.buildSelectorItem(this.configManager.getConfig().optJSONObject("serverItems", new JSONObject()).optJSONObject("current", new JSONObject()), name, players, maxPlayers);
             } else if (players >= maxPlayers) {
-                item.setType(Objects.requireNonNullElse(Material.getMaterial(this.configManager.getConfig().optJSONObject("serverItem", new JSONObject()).optString("typeFull", "")), Material.BARRIER));
-                this.setTitle(item, this.handlePlaceholders(this.configManager.getConfig().optJSONObject("serverItem", new JSONObject()).optString("nameFull", "&c{service} ({players}/{max_players})"), name, players, maxPlayers));
+                item = this.buildSelectorItem(this.configManager.getConfig().optJSONObject("serverItems", new JSONObject()).optJSONObject("full", new JSONObject()), name, players, maxPlayers);
+            } else if (isSilentHubService) {
+                item = this.buildSelectorItem(this.configManager.getConfig().optJSONObject("serverItems", new JSONObject()).optJSONObject("silentHub", new JSONObject()), name, players, maxPlayers);
             } else {
-                item.setType(Objects.requireNonNullElse(Material.getMaterial(this.configManager.getConfig().optJSONObject("serverItem", new JSONObject()).optString("type", "")), Material.EGG));
-                this.setTitle(item, this.handlePlaceholders(this.configManager.getConfig().optJSONObject("serverItem", new JSONObject()).optString("name", "&a{service} (current) ({players}/{max_players})"), name, players, maxPlayers));
+                item = this.buildSelectorItem(this.configManager.getConfig().optJSONObject("serverItems", new JSONObject()).optJSONObject("default", new JSONObject()), name, players, maxPlayers);
             }
 
             if (item.getItemMeta() == null) {
@@ -245,16 +248,58 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
         return inventory;
     }
 
-    private void setTitle(ItemStack item, String name) {
+    private ItemStack buildSelectorItem(JSONObject json, String serviceName, int players, int maxPlayers) {
+        Material type = Material.getMaterial(json.optString("material", ""));
 
-        if (item.getItemMeta() == null) {
-            item.setItemMeta(this.getServer().getItemFactory().getItemMeta(item.getType()));
+        if (type == null) {
+            ItemStack errorItem = new ItemStack(Material.BARRIER);
+            ItemMeta errorMeta = this.getServer().getItemFactory().getItemMeta(errorItem.getType());
+            errorMeta.setDisplayName("INVALID ITEM CONFIGURATION");
+            errorItem.setItemMeta(errorMeta);
+            return errorItem;
         }
 
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
-        item.setItemMeta(meta);
+        ItemStack itemStack = new ItemStack(type);
+        ItemMeta itemMeta = this.getServer().getItemFactory().getItemMeta(itemStack.getType());
 
+        // NAME
+        if (json.has("name")) {
+            itemMeta.setDisplayName(this.handlePlaceholders(json.optString("name", "INVALID STRING VALUE"), serviceName, players, maxPlayers));
+        }
+
+        // LORE
+        if (json.has("lore")) {
+            List<String> lore = new ArrayList<>();
+
+            for (Object value : json.optJSONArray("lore", new JSONArray())) {
+
+                if (!(value instanceof String)) {
+                    lore.add("INVALID STRING VALUE");
+                    continue;
+                }
+
+                lore.add(this.handlePlaceholders((String) value, serviceName, players, maxPlayers));
+
+            }
+
+            itemMeta.setLore(lore);
+
+        }
+
+        // ENCHANTED
+        if (json.optBoolean("enchanted", false)) {
+            itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+            itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        }
+
+        // CUSTOM MODEL DATA
+        if (json.optInt("customModelData", -1) >= 0) {
+            itemMeta.setCustomModelData(json.optInt("customModelData", 0));
+        }
+
+        itemStack.setItemMeta(itemMeta);
+
+        return itemStack.clone();
     }
 
     private String handlePlaceholders(String string, String serviceName, int players, int maxPlayers) {
@@ -293,14 +338,39 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
 
         JSONObject serverItemConfig = new JSONObject();
 
-        serverItemConfig.put("type", Material.EGG.name());
-        serverItemConfig.put("typeFull", Material.BARRIER.name());
-        serverItemConfig.put("typeCurrent", Material.EMERALD.name());
-        serverItemConfig.put("name", "&7{service} ({players}/{max_players})");
-        serverItemConfig.put("nameFull", "&c{service} ({players}/{max_players})");
-        serverItemConfig.put("nameCurrent", "&a{service} (current) ({players}/{max_players})");
+        JSONObject defItemConfig = new JSONObject();
+        defItemConfig.put("material", Material.EGG.name());
+        defItemConfig.put("name", "&7{service} ({players}/{max_players})");
+        defItemConfig.put("lore", new JSONArray());
+        defItemConfig.put("enchanted", false);
+        defItemConfig.put("customModelData", -1);
+        serverItemConfig.put("default", defItemConfig);
 
-        config.put("serverItem", serverItemConfig);
+        JSONObject silentHubConfig = new JSONObject();
+        silentHubConfig.put("material", Material.TNT.name());
+        silentHubConfig.put("name", "&7{service} ({players}/{max_players})");
+        silentHubConfig.put("lore", new JSONArray());
+        silentHubConfig.put("enchanted", false);
+        silentHubConfig.put("customModelData", -1);
+        serverItemConfig.put("silentHub", silentHubConfig);
+
+        JSONObject fullItemConfig = new JSONObject();
+        fullItemConfig.put("material", Material.BARRIER.name());
+        fullItemConfig.put("name", "&c{service} ({players}/{max_players})");
+        fullItemConfig.put("lore", new JSONArray());
+        fullItemConfig.put("enchanted", false);
+        fullItemConfig.put("customModelData", -1);
+        serverItemConfig.put("full", fullItemConfig);
+
+        JSONObject currentItemConfig = new JSONObject();
+        currentItemConfig.put("material", Material.EMERALD.name());
+        currentItemConfig.put("name", "&a{service} (current) ({players}/{max_players})");
+        currentItemConfig.put("lore", new JSONArray());
+        currentItemConfig.put("enchanted", true);
+        currentItemConfig.put("customModelData", -1);
+        serverItemConfig.put("current", currentItemConfig);
+
+        config.put("serverItems", serverItemConfig);
 
         return config;
     }

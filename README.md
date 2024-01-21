@@ -25,22 +25,21 @@ With the command `/lobbyselector`, the lobby selector menu can be opened.  There
 ## Configuration
 | Value | Description |
 |--|--|
-| `lobbyTask` | The lobby task name. |
-| `inventoryTitle` | The name of the lobby selector menu/inventory. |
-| `hideFullServices` | When enabled, full services will be hidden from the lobby selector menu. |
-| `enableSilentLobby` | When enabled, services from the task `silentLobbyTask` will also be displayed in the lobby selector menu. |
-| `silentLobbyTask` | The silent lobby task name. Services will only be shown when `enableSilentLobby` is set to `true`. |
-| `serverItem` | See ServerItem |
+| `lobbyTask`         | The lobby task name.                                                                                                                                                                                                                   |
+| `inventoryTitle`    | The name of the lobby selector menu/inventory.                                                                                                                                                                                         |
+| `hideFullServices`  | When enabled, full services will be hidden from the lobby selector menu.                                                                                                                                                               |
+| `enableSilentLobby` | When enabled, services from the task `silentLobbyTask` will also be displayed in the lobby selector menu.                                                                                                                              |
+| `silentLobbyTask`   | The silent lobby task name. Services will only be shown when `enableSilentLobby` is set to `true`.                                                                                                                                     |
+| `serverItems`       | A JSONObject with the following keys: `default` (Default Item), `full` (Full service), `silentHub` (SilentHub Service) and `current` (Current Service). The value for all of them is a JSONObject described in the ServerItem section. |
 
 ### ServerItem
 | Value | Description |
 |--|--|
-| `type` | The material of a service displayed in the lobby selector menu which is neither full nor the current service. |
-| `typeFull` | The material of a full service displayed in the lobby selector menu. |
-| `typeCurrent` | The material of the current service displayed in the lobby selector menu. |
-| `name` | The item name of a service displayed in the lobby selector menu which is neither full nor the current service. |
-| `nameFull` | The item name of a full service displayed in the lobby selector menu. |
-| `nameCurrent` | The item name of the current service displayed in the lobby selector menu. |
+| `material`        | The material of the service displayed in the lobby selector menu.                                                     |
+| `name`            | The name of the service displayed in the lobby selector menu. Can contain placeholders from the placeholders section. |
+| `lore`            | The item lore as a JSON Array of Strings (1 element = 1 line).                                                        |
+| `enchanted`       | When set to true, the item has the enchantment glint effect.                                                          |
+| `customModelData` | The custom model data of the item. Set to a negative value to disable.                                                |
 
 ### Placeholders
 The following placeholders can be used in the config options `name`, `nameFull` and `nameCurrent`:
