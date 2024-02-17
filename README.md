@@ -54,7 +54,7 @@ Your lobby plugin needs to support custom items that run commands if they are cl
 The two most used lobby plugins (DeluxeHub and SuperLobbyDeluxe) do support this.  
 Then you need to simply run the command `/lobbyselector` as the player who clicked the item.
 
-## Known Issue when clicking on server items does not work
+## Known Issue: Nothing happens when clicking on server items
 It can happen that if you click on a server item nothing will happen.
 There is a CloudNet bug which causes this. Check if you are shown in /cloud players online (or players online in cloudnet console).
 If this is not the case, the plugin can't move you because it uses the CloudNet API for that.
