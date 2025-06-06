@@ -106,7 +106,7 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
             return;
         }
 
-        PlayerManager playerManager = serviceRegistry.firstProvider(PlayerManager.class);
+        PlayerManager playerManager = serviceRegistry.defaultInstance(PlayerManager.class);
 
         if (playerManager == null) {
             return;
@@ -288,8 +288,8 @@ public class LobbySelector extends JavaPlugin implements Listener, InventoryHold
 
         // ENCHANTED
         if (json.optBoolean("enchanted", false)) {
-            itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
-            itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            itemMeta.addEnchant(Enchantment.FORTUNE, 1, true);
+            itemMeta.addItemFlags(ItemFlag.values());
         }
 
         // CUSTOM MODEL DATA
